@@ -8,7 +8,7 @@ import java.util.List;
 public interface ManufacturerService {
     List<ManufacturerResponseDTO> getAllManufacturers();
     ManufacturerResponseDTO getManufacturerById(Integer manufacturerId);
-    ManufacturerResponseDTO updateManufacturer(ManufacturerRequestDTO manufacturer);
-    ManufacturerResponseDTO createManufacturer(Integer manufacturerId, ManufacturerRequestDTO manufacturer);
+    ManufacturerResponseDTO updateManufacturer(Integer manufacturerId, ManufacturerRequestDTO manufacturer);
+    ManufacturerResponseDTO createManufacturer(ManufacturerRequestDTO manufacturer);
     void  deleteManufacturer(Integer manufacturerId);
 }

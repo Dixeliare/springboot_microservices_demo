@@ -19,38 +19,65 @@ public class ManufacturerImpl implements ManufacturerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ManufacturerResponseDTO> getAllManufacturers(){
-        return manufacturerRepository.
-                findAll().
-                stream().
-                map(this::convertDTO).
-                toList();
+    public List<ManufacturerResponseDTO> getAllManufacturers() {
+        return manufacturerRepository
+                .findAll()
+                .stream()
+                .map(this::convertDTO)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public ManufacturerResponseDTO getManufacturerById(Integer manufacturerId) {
-        return manufacturerRepository.findById(manufacturerId).
-                map(this::convertDTO).
+        return manufacturerRepository
+                .findById(manufacturerId)
+                .map(this::convertDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Manufacturer", "Id", manufacturerId.toString()));
+    }
+
+    @Override
+    @Transactional
+    public ManufacturerResponseDTO updateManufacturer(Integer manufacturerId, ManufacturerRequestDTO manufacturer) {
+        Manufacturer data = manufacturerRepository.findById(manufacturerId).
                 orElseThrow(() -> new ResourceNotFoundException("Manufacturer", "Id", manufacturerId.toString()));
+        if (!data.getManufacturerName().equals(manufacturer.getManufacturerName()) &&
+                manufacturerRepository.findByManufacturerName(manufacturer.getManufacturerName()).isPresent()) {
+            throw new IllegalArgumentException("Manufacturer with name :" + manufacturer.getManufacturerName() + " already exists");
+        }
+        data.setManufacturerName(manufacturer.getManufacturerName());
+        data.setDescription(manufacturer.getDescription());
+        data.setManufacturerCountry(manufacturer.getManufacturerCountry());
+
+        return convertDTO(manufacturerRepository.save(data));
     }
 
     @Override
-    public ManufacturerResponseDTO updateManufacturer(ManufacturerRequestDTO manufacturer) {
-        return null;
-    }
+    @Transactional
+    public ManufacturerResponseDTO createManufacturer(ManufacturerRequestDTO manufacturer) {
+        if (manufacturerRepository.findByManufacturerName(manufacturer.getManufacturerName()).isPresent()) {
+            throw new IllegalArgumentException("Manufacturer with name " + manufacturer.getManufacturerName() + " already exists.");
+        }
+        Manufacturer manu = new Manufacturer(
+                null,
+                manufacturer.getManufacturerName(),
+                manufacturer.getDescription(),
+                manufacturer.getManufacturerCountry()
+        );
 
-    @Override
-    public ManufacturerResponseDTO createManufacturer(Integer manufacturerId, ManufacturerRequestDTO manufacturer) {
-        return null;
+        return convertDTO(manufacturerRepository.save(manu));
     }
 
     @Override
     public void deleteManufacturer(Integer manufacturerId) {
+        if(!manufacturerRepository.existsById(manufacturerId)) {
+            throw new ResourceNotFoundException("Manufacturer", "Id", manufacturerId.toString());
+        }
+        manufacturerRepository.deleteById(manufacturerId);
 
     }
 
-    private ManufacturerResponseDTO convertDTO(Manufacturer  manufacturer) {
+    private ManufacturerResponseDTO convertDTO(Manufacturer manufacturer) {
         return new ManufacturerResponseDTO(
                 manufacturer.getManufacturerId(),
                 manufacturer.getManufacturerName(),

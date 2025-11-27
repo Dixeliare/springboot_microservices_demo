@@ -68,4 +68,63 @@ temp/
 # Others
 *.swp
 *.swo
+*~
 
+# Maven Wrapper (giữ lại mvnw và mvnw.cmd nhưng ignore .mvn/)
+.mvn/wrapper/maven-wrapper.properties
+**/.mvn/wrapper/maven-wrapper.properties
+
+# Git attributes (không cần thiết)
+.gitattributes
+**/.gitattributes
+
+# Application properties với sensitive data (nếu có)
+application-local.properties
+application-dev.properties
+application-prod.properties
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+
+# Spring Boot specific
+application-*.yml
+application-*.yaml
+!application.yml
+!application.yaml
+
+# Test coverage
+.nyc_output/
+coverage/
+
+# Package files
+*.jar
+*.war
+*.ear
+*.nar
+
+# Exclude all target directories
+**/target/
+**/bin/
+**/out/
+
+# Exclude IDE specific files in subdirectories
+**/.idea/
+**/*.iml
+**/.vscode/
+**/.settings/
+**/.classpath
+**/.project
+
+# Exclude logs in subdirectories
+**/logs/
+**/*.log
+
+# Keep mvnw files but ignore .mvn folder contents
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties

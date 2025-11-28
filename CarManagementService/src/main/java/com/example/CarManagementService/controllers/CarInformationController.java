@@ -20,7 +20,7 @@ public class CarInformationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CarResponseDTO> getCarById(@RequestParam Integer id){
+    public ResponseEntity<CarResponseDTO> getCarById(@PathVariable Integer id){
         CarResponseDTO car = carInformationService.getCarById(id);
         return ResponseEntity.ok(car);
     }

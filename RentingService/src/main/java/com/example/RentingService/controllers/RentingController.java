@@ -3,11 +3,13 @@ package com.example.RentingService.controllers;
 import com.example.RentingService.dtos.RentingStatusUpdateDTO;
 import com.example.RentingService.dtos.RentingTransactionRequestDTO;
 import com.example.RentingService.dtos.RentingTransactionResponseDTO;
+import com.example.RentingService.dtos.StatisticsResponseDTO;
 import com.example.RentingService.services.RentingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -46,5 +48,12 @@ public class RentingController {
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         rentingService.deleteTransaction(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<StatisticsResponseDTO> getStatistics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate) {
+        return ResponseEntity.ok(rentingService.getStatistics(startDate, endDate));
     }
 }

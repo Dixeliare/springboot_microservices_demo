@@ -5,6 +5,7 @@ import com.example.RentingService.feign.CarServiceClient;
 import com.example.RentingService.feign.CustomerServiceClient;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
+import java.time.temporal.ChronoUnit;
 
 import com.example.RentingService.exceptions.ResourceNotFoundException;
 import com.example.RentingService.models.RentingDetail;
@@ -51,6 +52,19 @@ public class RentingServiceImpl implements RentingService {
 
         // 2. Validate từng car và check availability
         for (RentingDetailRequestDTO detailDto : request.getRentingDetails()) {
+            // Validate dates
+            if (detailDto.getStartDate() == null || detailDto.getEndDate() == null) {
+                throw new IllegalArgumentException("Start date and end date are required for car ID: " + detailDto.getCarId());
+            }
+            
+            if (detailDto.getStartDate().isAfter(detailDto.getEndDate())) {
+                throw new IllegalArgumentException("Start date must be before end date for car ID: " + detailDto.getCarId());
+            }
+            
+            if (detailDto.getStartDate().isBefore(LocalDate.now())) {
+                throw new IllegalArgumentException("Start date cannot be in the past for car ID: " + detailDto.getCarId());
+            }
+            
             try {
                 ResponseEntity<Map<String, Object>> carResponse =
                         carServiceClient.getCarById(detailDto.getCarId());
@@ -66,6 +80,13 @@ public class RentingServiceImpl implements RentingService {
                     throw new IllegalArgumentException(
                             "Car ID " + detailDto.getCarId() + " is not available. Current status: " + carStatus
                     );
+                }
+                
+                // Auto-calculate price if not provided
+                if (detailDto.getPrice() == null || detailDto.getPrice() <= 0) {
+                    Double pricePerDay = ((Number) car.get("carRentingPricePerDay")).doubleValue();
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(detailDto.getStartDate(), detailDto.getEndDate()) + 1;
+                    detailDto.setPrice(pricePerDay * days);
                 }
             } catch (IllegalArgumentException e) {
                 throw e;
@@ -157,6 +178,46 @@ public class RentingServiceImpl implements RentingService {
         RentingTransaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("RentingTransaction", "id", transactionId.toString()));
         transactionRepository.delete(transaction);
+    }
+
+    @Override
+    public StatisticsResponseDTO getStatistics(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null) {
+            startDate = LocalDate.now().minusMonths(1);
+        }
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must be before or equal to end date");
+        }
+        
+        Long totalTransactions = transactionRepository.countByRentingDateBetween(startDate, endDate);
+        Long approvedTransactions = transactionRepository.countByRentingDateBetweenAndStatus(
+            startDate, endDate, RentingTransaction.RentingStatus.APPROVED);
+        Long completedTransactions = transactionRepository.countByRentingDateBetweenAndStatus(
+            startDate, endDate, RentingTransaction.RentingStatus.COMPLETED);
+        Long rejectedTransactions = transactionRepository.countByRentingDateBetweenAndStatus(
+            startDate, endDate, RentingTransaction.RentingStatus.REJECTED);
+        Long pendingTransactions = transactionRepository.countByRentingDateBetweenAndStatus(
+            startDate, endDate, RentingTransaction.RentingStatus.PENDING);
+        
+        Double totalRevenue = transactionRepository.sumTotalPriceByRentingDateBetween(startDate, endDate);
+        Double averageTransactionValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0.0;
+        
+        StatisticsResponseDTO statistics = new StatisticsResponseDTO();
+        statistics.setStartDate(startDate);
+        statistics.setEndDate(endDate);
+        statistics.setTotalTransactions(totalTransactions);
+        statistics.setApprovedTransactions(approvedTransactions);
+        statistics.setCompletedTransactions(completedTransactions);
+        statistics.setRejectedTransactions(rejectedTransactions);
+        statistics.setPendingTransactions(pendingTransactions);
+        statistics.setTotalRevenue(totalRevenue);
+        statistics.setAverageTransactionValue(averageTransactionValue);
+        
+        return statistics;
     }
 
     private RentingTransactionResponseDTO convertToResponse(RentingTransaction transaction) {
